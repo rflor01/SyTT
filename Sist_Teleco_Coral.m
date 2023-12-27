@@ -6,23 +6,26 @@ load ("Practica_Sist_Tec_Teleco_2324.mat")
 N_BTS = 25;
 num_individuos_iniciales = 80;
 Tamanyo_matriz_coral = 100;
-%%%%%%%%%%
-figure(1)
-plot(bt(:,1),bt(:,2), 'o', 'Color','red')
-hold on
-plot(xp(:,1),xp(:,2), 'x', 'Color','blue')
-%viscircles(bt,1.5)
-xlabel('Distancia [km]')
-ylabel('Distancia [km]')
-title('Distribución de Estaciones Base y Usuarios')
-
+num_generaciones = 100;
+max_vida = 3;
+alpha = 1;
+betta = 0;
+modo = 0;
 Radius = 1.75;
+%%%%%%%%%%
+
+
+
 
 Matriz_coral = nan * ones(Tamanyo_matriz_coral,100);
 
 Personas = obtain_personas(bt,xp,Radius);
 
 poblacion_inicial = init_poblacion(num_individuos_iniciales,bt,N_BTS);
+
+coste_min = obtain_min_cost(C);
+alcance_max = obtain_max_alcance(Personas);
+
 
 
 posiciones = randperm(100,num_individuos_iniciales);
@@ -31,13 +34,55 @@ for i = 1:num_individuos_iniciales
 
     Matriz_coral(posiciones(i),:) = poblacion_inicial(i,:);
 end
-hijos = cruce(100,Matriz_coral,N_BTS);
-N_personas = obtain_alcance(Matrix(1,:),Personas,0);
-N_personas_unicas = obtain_alcance(Matrix(1,:),Personas,1);
-N_personas
-N_personas_unicas
+vector_temporal = zeros(1,num_generaciones);
+for i = 1:num_generaciones
+    max_funcion_obj = 0;
+    for j = 1:height(Matriz_coral)
+        if ~isnan(Matriz_coral(j,1))
+        objetivo_actual = function_objetivo(Matriz_coral(j,:),alcance_max,coste_min, alpha, betta,modo,Personas,C);
+            if objetivo_actual > max_funcion_obj
+              max_funcion_obj = objetivo_actual;
+              mejor = j;
+            end
+        end
 
+    end
+    vector_temporal(i)=max_funcion_obj;
+    figure(2)
+    plot(1:i,vector_temporal(1:i))
+    xlabel('Número de generaciones')
+    ylabel('Función Coste')
+    hijos = cruce(100,Matriz_coral,N_BTS);
+    hijos = mutar_hijos(hijos);
+    Matriz_coral = BATALLA(Matriz_coral,hijos,max_vida,alcance_max,coste_min,alpha,betta,modo,Personas,C);
+end
+max_funcion_obj = 0;
+for i = 1:height(Matriz_coral)
+    objetivo_actual = function_objetivo(Matriz_coral(i,:),alcance_max,coste_min, alpha, betta,modo,Personas,C);
+    if objetivo_actual > max_funcion_obj
+        max_funcion_obj = objetivo_actual;
+        mejor = i;
+    end
 
+end
+
+fprintf("Tu i es %d \n",mejor);
+fprintf("Su función objetivo es: %.20f \n", max_funcion_obj);
+bts_usadas = find(Matriz_coral(mejor,:));
+bts_no_usadas = find(~Matriz_coral(mejor,:));
+
+figure(1)
+plot(bt(bts_usadas,1),bt(bts_usadas,2), 'o', 'Color','red')
+hold on
+plot(xp(:,1),xp(:,2), 'x', 'Color','blue')
+hold on 
+viscircles(bt(bts_usadas,:),Radius*ones(25,1))
+hold on
+plot(bt(bts_no_usadas,1),bt(bts_no_usadas,2), 'o', 'Color','yellow')
+hold on
+xlabel('Distancia [km]')
+ylabel('Distancia [km]')
+title('Distribución de Estaciones Base y Usuarios')
 %% Calculamos C1 %%
 
 
@@ -71,6 +116,23 @@ function [hijos] = cruce(num_hijos, Matrix,num_BTS_Total)
         %Ya hemos corregido los hijos, falta mutarlos
     end
 end
+
+function [hijos_mutados] = mutar_hijos(hijos)
+    hijos_mutados = zeros(length(hijos),100);
+    for i = 1:length(hijos)
+        aleatorio = randperm(100,1);
+        hijos_mutados(i,:) = hijos(i,:);
+        if aleatorio == 1
+            unos = find(hijos(i,:));
+            n_zeros = find(~hijos(i,:));
+            indices_unos = randperm(25,10);
+            indices_zeros = randperm(75,10);
+            hijos_mutados(i,unos(indices_unos)) = 0;
+            hijos_mutados(i,n_zeros(indices_zeros)) = 1;
+        end
+    end
+end
+
 function [Cost] = obtain_cost(muestra,costes)
     Cost = muestra*costes;
 end
@@ -128,6 +190,52 @@ function [Personas] = obtain_personas(bt,xp,Radius)
             if (distance<=Radius)
                 Personas(i,contador) = j;
                 contador = contador+1;
+            end
+        end
+    end
+end
+
+function [max_personas] = obtain_max_alcance(Personas)
+    num_personas_por_estacion = zeros(1,100);
+    for i = 1:height(Personas)
+
+        num_personas_por_estacion(i) = length(find(~isnan(Personas(i,:))));
+
+    end
+    ordenada = sort(num_personas_por_estacion);
+    max_personas = sum(ordenada(76:end));
+end
+function [min_cost] = obtain_min_cost(C)
+    ordenada = sort(C);
+    min_cost = sum(ordenada(1:25));
+end
+
+
+function [valor] = function_objetivo(muestra,alcance_max,coste_min, alpha, betta,modo,Personas,coste)
+    valor = alpha*(obtain_alcance(muestra,Personas,modo)/alcance_max) + betta*(coste_min/obtain_cost(muestra,coste));
+end
+
+
+
+
+function [Matriz_coral] = BATALLA(Matriz_coral, hijos,max_vida, alcance_max, coste_min, alpha, betta,modo,Personas,coste)
+    
+    for i = 1:height(hijos)
+        vidas = max_vida;
+        potencia_hijo = function_objetivo(hijos(i,:),alcance_max,coste_min,alpha,betta,modo,Personas,coste);
+        while(vidas)
+            pos_contrincante = randperm(height(Matriz_coral),1);
+            if(isnan(Matriz_coral(pos_contrincante,1)))
+                Matriz_coral(pos_contrincante,:) = hijos(i,:);
+                break;
+            else
+                potencia_padre = function_objetivo(Matriz_coral(pos_contrincante,:),alcance_max,coste_min,alpha,betta,modo,Personas,coste);
+                if (potencia_padre>potencia_hijo)
+                    vidas = vidas-1;
+                else
+                    Matriz_coral(pos_contrincante,:) = hijos(i,:);
+                    break;
+                end
             end
         end
     end
