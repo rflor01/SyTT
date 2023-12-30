@@ -1,6 +1,8 @@
 clear 
 close all
 
+rng(0,"threefry")
+
 %%%%% INICIA VALORES
 load ("Practica_Sist_Tec_Teleco_2324.mat")
 N_BTS = 25;
@@ -9,7 +11,7 @@ Tamanyo_matriz_coral = 100;
 num_generaciones = 100;
 max_vida = 3;
 alpha = 1;
-betta = 0;
+betta = 1;
 modo = 0;
 Radius = 1.75;
 %%%%%%%%%%
@@ -48,10 +50,12 @@ for i = 1:num_generaciones
 
     end
     vector_temporal(i)=max_funcion_obj;
-    figure(2)
-    plot(1:i,vector_temporal(1:i))
-    xlabel('Número de generaciones')
-    ylabel('Función Coste')
+    figure(1)
+    plot(1:i,vector_temporal(1:i),':.')
+    grid minor
+    xlabel('Número de iteraciones')
+    ylabel('Resultado de la Función de Coste g(x)')
+    %title('Resultado de la Función de Coste en relación a las iteraciones sobre el Algoritmo de Coral')
     hijos = cruce(100,Matriz_coral,N_BTS);
     hijos = mutar_hijos(hijos);
     Matriz_coral = BATALLA(Matriz_coral,hijos,max_vida,alcance_max,coste_min,alpha,betta,modo,Personas,C);
@@ -66,31 +70,26 @@ for i = 1:height(Matriz_coral)
 
 end
 
-fprintf("Tu i es %d \n",mejor);
-fprintf("Su función objetivo es: %.20f \n", max_funcion_obj);
+fprintf("La mejor solución en índice: <strong>%d</strong>\n",mejor);
+fprintf("El resultado de la función objetivo es: <strong>%.20f</strong>\n", max_funcion_obj);
 bts_usadas = find(Matriz_coral(mejor,:));
 bts_no_usadas = find(~Matriz_coral(mejor,:));
+bt_sol_idx = sprintf('%d, ', bts_usadas);
+bt_sol_idx = bt_sol_idx(1:end-2);
+fprintf("Las BT empleadas son: <strong>%s</strong>\n", bt_sol_idx);
 
-figure(1)
+figure(2)
 plot(bt(bts_usadas,1),bt(bts_usadas,2), 'o', 'Color','red')
 hold on
 plot(xp(:,1),xp(:,2), 'x', 'Color','blue')
 hold on 
-viscircles(bt(bts_usadas,:),Radius*ones(25,1))
+viscircles(bt(bts_usadas,:),Radius*ones(25,1));
 hold on
-plot(bt(bts_no_usadas,1),bt(bts_no_usadas,2), 'o', 'Color','yellow')
+plot(bt(bts_no_usadas,1),bt(bts_no_usadas,2), 'o', 'Color','#77AC30')
 hold on
 xlabel('Distancia [km]')
 ylabel('Distancia [km]')
 title('Distribución de Estaciones Base y Usuarios')
-%% Calculamos C1 %%
-
-
-
-%% Calculamos C2 %%
-
-%g(x) = Alpha Gentecubre(x) + Betta 1/Costetotal(x) 
-
 
 function [hijos] = cruce(num_hijos, Matrix,num_BTS_Total)
     hijos = zeros(num_hijos,100);
