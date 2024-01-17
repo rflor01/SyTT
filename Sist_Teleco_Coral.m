@@ -8,10 +8,10 @@ load ("Practica_Sist_Tec_Teleco_2324.mat")
 N_BTS = 25;
 num_individuos_iniciales = 80;
 Tamanyo_matriz_coral = 100;
-num_generaciones = 100;
+num_generaciones = 150;
 max_vida = 3;
-alpha = 1;
-betta = 1;
+alpha = 0.75;
+betta = 0.5;
 modo = 0;
 Radius = 1.75;
 %%%%%%%%%%
@@ -28,20 +28,20 @@ poblacion_inicial = init_poblacion(num_individuos_iniciales,bt,N_BTS);
 coste_min = obtain_min_cost(C);
 alcance_max = obtain_max_alcance(Personas);
 
-
-
 posiciones = randperm(100,num_individuos_iniciales);
 
 for i = 1:num_individuos_iniciales
 
     Matriz_coral(posiciones(i),:) = poblacion_inicial(i,:);
 end
+%g = @(x,y) alpha*(x/alcance_max) + betta*(coste_min/y);
 vector_temporal = zeros(1,num_generaciones);
 for i = 1:num_generaciones
     max_funcion_obj = 0;
     for j = 1:height(Matriz_coral)
         if ~isnan(Matriz_coral(j,1))
         objetivo_actual = function_objetivo(Matriz_coral(j,:),alcance_max,coste_min, alpha, betta,modo,Personas,C);
+        %objetivo_actual_v2 = g(obtain_alcance(Matriz_coral(j,:),Personas,modo),obtain_cost(Matriz_coral(j,:),C));
             if objetivo_actual > max_funcion_obj
               max_funcion_obj = objetivo_actual;
               mejor = j;
@@ -77,6 +77,10 @@ bts_no_usadas = find(~Matriz_coral(mejor,:));
 bt_sol_idx = sprintf('%d, ', bts_usadas);
 bt_sol_idx = bt_sol_idx(1:end-2);
 fprintf("Las BT empleadas son: <strong>%s</strong>\n", bt_sol_idx);
+N_per_cubiertas = obtain_alcance(Matriz_coral(mejor,:),Personas,modo);
+fprintf("El número de personas cubiertas es de: <strong>%d</strong>\n", N_per_cubiertas);
+Coste_total = obtain_cost(Matriz_coral(mejor,:),C);
+fprintf("El Coste Total es de: <strong>%d €</strong>\n", Coste_total);
 
 figure(2)
 plot(bt(bts_usadas,1),bt(bts_usadas,2), 'o', 'Color','red')
