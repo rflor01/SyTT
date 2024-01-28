@@ -8,11 +8,13 @@ load ("Practica_Sist_Tec_Teleco_2324.mat")
 N_BTS = 25;
 num_individuos_iniciales = 80;
 Tamanyo_matriz_coral = 100;
-num_generaciones = 150;
+num_generaciones = 120;
 max_vida = 3;
-alpha = 0.75;
+alpha = 0.8;
 betta = 0.5;
-modo = 0;
+% En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
+% En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
+modo = 1;
 Radius = 1.75;
 %%%%%%%%%%
 
@@ -55,7 +57,7 @@ for i = 1:num_generaciones
     grid minor
     xlabel('Número de iteraciones')
     ylabel('Resultado de la Función de Coste g(x)')
-    %title('Resultado de la Función de Coste en relación a las iteraciones sobre el Algoritmo de Coral')
+    title(sprintf('%c = %.2f, %c = %.2f, R = %.2f km, modo = %d', 945, alpha, 946, betta, Radius, modo))
     hijos = cruce(100,Matriz_coral,N_BTS);
     hijos = mutar_hijos(hijos);
     Matriz_coral = BATALLA(Matriz_coral,hijos,max_vida,alcance_max,coste_min,alpha,betta,modo,Personas,C);
@@ -69,7 +71,8 @@ for i = 1:height(Matriz_coral)
     end
 
 end
-
+fprintf("-------------------------------------------------------------------------------\n")
+fprintf("Los parámetros empleados son: <strong>%c = %.2f, %c = %.2f, R = %.2f km, modo = %d</strong>\n",945,alpha,946,betta,Radius, modo);
 fprintf("La mejor solución en índice: <strong>%d</strong>\n",mejor);
 fprintf("El resultado de la función objetivo es: <strong>%.20f</strong>\n", max_funcion_obj);
 bts_usadas = find(Matriz_coral(mejor,:));
@@ -80,20 +83,32 @@ fprintf("Las BT empleadas son: <strong>%s</strong>\n", bt_sol_idx);
 N_per_cubiertas = obtain_alcance(Matriz_coral(mejor,:),Personas,modo);
 fprintf("El número de personas cubiertas es de: <strong>%d</strong>\n", N_per_cubiertas);
 Coste_total = obtain_cost(Matriz_coral(mejor,:),C);
-fprintf("El Coste Total es de: <strong>%d €</strong>\n", Coste_total);
+fprintf("El Coste Total es de: <strong>%d</strong>\n", Coste_total);
+fprintf("-------------------------------------------------------------------------------\n")
 
 figure(2)
 plot(bt(bts_usadas,1),bt(bts_usadas,2), 'o', 'Color','red')
 hold on
+plot(bt(bts_no_usadas,1),bt(bts_no_usadas,2), 'o', 'Color','#77AC30')
+hold on
 plot(xp(:,1),xp(:,2), 'x', 'Color','blue')
 hold on 
 viscircles(bt(bts_usadas,:),Radius*ones(25,1));
-hold on
-plot(bt(bts_no_usadas,1),bt(bts_no_usadas,2), 'o', 'Color','#77AC30')
-hold on
+xlim([-2 22])
+ylim([-2 22])
 xlabel('Distancia [km]')
 ylabel('Distancia [km]')
 title('Distribución de Estaciones Base y Usuarios')
+legend('BTSs Usadas', 'BTSs No Usadas','Usuarios')
+
+figure(3)
+plot(xp(:,1),xp(:,2), 'x', 'Color','blue')
+hold on
+xlabel('Distancia [km]')
+ylabel('Distancia [km]')
+title('Usuarios Potenciales')
+
+% --------------- FUNCIONES ----------------------------------
 
 function [hijos] = cruce(num_hijos, Matrix,num_BTS_Total)
     hijos = zeros(num_hijos,100);
@@ -141,8 +156,8 @@ function [Cost] = obtain_cost(muestra,costes)
 end
 
 function [N_personas] = obtain_alcance(muestra,personas,modo)
-%En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
-%En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
+% En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
+% En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
 pos=find(muestra==1);
     if modo == 0
         fila = personas(pos,:);
@@ -201,13 +216,12 @@ end
 function [max_personas] = obtain_max_alcance(Personas)
     num_personas_por_estacion = zeros(1,100);
     for i = 1:height(Personas)
-
         num_personas_por_estacion(i) = length(find(~isnan(Personas(i,:))));
-
     end
     ordenada = sort(num_personas_por_estacion);
     max_personas = sum(ordenada(76:end));
 end
+
 function [min_cost] = obtain_min_cost(C)
     ordenada = sort(C);
     min_cost = sum(ordenada(1:25));
