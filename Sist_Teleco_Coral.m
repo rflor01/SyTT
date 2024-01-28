@@ -15,7 +15,7 @@ betta = 0.5;
 % En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
 % En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
 modo = 1;
-Radius = 1.75;
+Radius = 0.75;
 %%%%%%%%%%
 
 
@@ -156,21 +156,22 @@ function [Cost] = obtain_cost(muestra,costes)
 end
 
 function [N_personas] = obtain_alcance(muestra,personas,modo)
-% En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
-% En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
+%En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
+%En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
 pos=find(muestra==1);
     if modo == 0
         fila = personas(pos,:);
         N_personas = sum(sum(~isnan(fila)));
     else
         recorridos = [];
-        for i = 1:length(pos)
-            idx_nan = find(isnan(personas(pos(i),:)));
-            temp_recorridos = personas(pos(i),1:(idx_nan(1)-1));
-            recorridos = unique([recorridos temp_recorridos]);
-        end
-        N_personas = length(recorridos);
-
+            for i = 1:length(pos)
+                idx_nan = find(isnan(personas(pos(i),:)));
+                if ~isempty(idx_nan)
+                    temp_recorridos = personas(pos(i),1:(idx_nan(1)-1));
+                    recorridos = unique([recorridos temp_recorridos]);
+                end
+            end
+            N_personas = length(recorridos);
     end
 end
 
