@@ -15,7 +15,7 @@ betta = 0.5;
 % En el modo 0 una persona cuenta como 2 si le cubren 2 antenas
 % En el modo 1 una persona cuenta como 1 si le cubren 2 antenas
 modo = 1;
-Radius = 0.75;
+Radius = 1.75;
 %%%%%%%%%%
 
 
@@ -200,7 +200,7 @@ end
 
 
 function [Personas] = obtain_personas(bt,xp,Radius)
-    Personas = nan * ones(100,24);
+    Personas = nan * ones(100,100);
     for i = 1:length(bt(:,1))
         contador = 1;
         for j = 1:length(xp(:,1))
